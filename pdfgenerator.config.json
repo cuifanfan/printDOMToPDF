@@ -1,0 +1,8 @@
+{
+  
+  "port": 16695,
+  "logs": {
+    "size": 1048576
+  },
+  "viewsPath": "./views/"
+}
