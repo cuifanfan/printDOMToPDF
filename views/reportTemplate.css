@@ -5,7 +5,7 @@ body {
 
 @font-face {
   font-family: ali-font;
-  src: url("http://127.0.0.1:8081/Desktop/htmltemplate/font/Alibaba-PuHuiTi-Regular.ttf");
+  src: url("Alibaba-PuHuiTi-Regular.ttf");
   font-weight: normal;
   font-style: normal;
 }

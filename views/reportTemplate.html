@@ -45,48 +45,48 @@
       <div data-v-35736a9c="" id="mainImgWrapper" class="mainImage">
         <div data-v-35736a9c="">
           <div data-v-35736a9c="" id="leftImg4" class="container-left leftImg4"><img data-v-35736a9c=""
-              src="isv/v1/file/{{Butterflies['1'].Path}}" alt="Left">
+              src="{{Butterflies['1'].Path}}" alt="Left">
             <div data-v-35736a9c="">
               {{each points.leftPoints}}
               <div data-v-35736a9c="" class="points" style="top: {{$value.style.top}}; left: {{$value.style.left}};">
                 <span data-v-35736a9c="" class="defect-point"
-                  style="background-color: {{$value.style.backgroundColor}};"></span><span
+                  style="background-color: {{$value.style.backgroundColor}};"></span><span style="font-weight: 400;"
                   data-v-35736a9c="">{{$value.ID + 1}}</span>
               </div>
               {{/each}}
             </div>
           </div>
           <div data-v-35736a9c="" id="topImg4" class="container-top topImg4"><img data-v-35736a9c=""
-              src="isv/v1/file/{{Butterflies['0'].Path}}" alt="Top">
+              src="{{Butterflies['0'].Path}}" alt="Top">
             <div data-v-35736a9c="">
               {{each points.topPoints}}
               <div data-v-35736a9c="" class="points" style="top: {{$value.style.top}}; left: {{$value.style.left}};">
                 <span data-v-35736a9c="" class="defect-point"
-                  style="background-color: {{$value.style.backgroundColor}};"></span><span
+                  style="background-color: {{$value.style.backgroundColor}};"></span><span style="font-weight: 400;"
                   data-v-35736a9c="">{{$value.ID + 1}}</span>
               </div>
               {{/each}}
             </div>
           </div>
           <div data-v-35736a9c="" id="rightImg4" class="container-right rightImg4"><img data-v-35736a9c=""
-              src="isv/v1/file/{{Butterflies['2'].Path}}" alt="Right">
+              src="{{Butterflies['2'].Path}}" alt="Right">
             <div data-v-35736a9c="">
               {{each points.rightPoints}}
               <div data-v-35736a9c="" class="points" style="top: {{$value.style.top}}; left: {{$value.style.left}};">
                 <span data-v-35736a9c="" class="defect-point"
-                  style="background-color: {{$value.style.backgroundColor}};"></span><span
+                  style="background-color: {{$value.style.backgroundColor}};"></span><span style="font-weight: 400;"
                   data-v-35736a9c="">{{$value.ID + 1}}</span>
               </div>
               {{/each}}
             </div>
           </div>
           <div data-v-35736a9c="" id="rearImg4" class="container-back rearImg4"><img data-v-35736a9c=""
-              src="isv/v1/file/{{Butterflies['3'].Path}}" alt="Rear">
+              src="{{Butterflies['3'].Path}}" alt="Rear">
             <div data-v-35736a9c="">
               {{each points.rearPoints}}
               <div data-v-35736a9c="" class="points" style="top: {{$value.style.top}}; left: {{$value.style.left}};">
                 <span data-v-35736a9c="" class="defect-point"
-                  style="background-color: {{$value.style.backgroundColor}};"></span><span
+                  style="background-color: {{$value.style.backgroundColor}};"></span><span style="font-weight: 400;"
                   data-v-35736a9c="">{{$value.ID + 1}}</span>
               </div>
               {{/each}}
@@ -196,10 +196,10 @@
           {{each Pictures}}
           {{if $index < 7}} <div data-v-35736a9c="" class="defectDetailsItem">
             <div data-v-35736a9c="" class="tableItem zh-id">{{$index + 1}}</div>
+            <div data-v-35736a9c="" class="shape tableItem"><img data-v-35736a9c="" src="{{$value.Shape}}"
+              alt="" class="picture"></div>
             <div data-v-35736a9c="" class="reflectance tableItem"><img data-v-35736a9c=""
-                src="isv/v1/file/{{$value.Reflectance}}" alt="" class="picture"></div>
-            <div data-v-35736a9c="" class="shape tableItem"><img data-v-35736a9c="" src="isv/v1/file/{{$value.Shape}}"
-                alt="" class="picture"></div>
+                src="{{$value.Reflectance}}" alt="" class="picture"></div>
             <div data-v-35736a9c="" class="type-wrap type-zh">{{$value.Type}}</div>
             <div data-v-35736a9c="" class="position tableItem">
               <div data-v-35736a9c="" class="positionItem positionItemFirst">X:{{$value.X}}</div>
@@ -258,10 +258,10 @@
                     <div data-v-35736a9c="" class="tableItem zh-id">
                       <%=(j + 1)%>
                     </div>
-                    <div data-v-35736a9c="" class="reflectance tableItem"><img data-v-35736a9c=""
-                        src="isv/v1/file/<%=(Pictures[j].Reflectance)%>" alt="" class="picture"></div>
                     <div data-v-35736a9c="" class="shape tableItem"><img data-v-35736a9c=""
-                        src="isv/v1/file/<%=(Pictures[j].Shape)%>" alt="" class="picture"></div>
+                      src="<%=(Pictures[j].Shape)%>" alt="" class="picture"></div>
+                    <div data-v-35736a9c="" class="reflectance tableItem"><img data-v-35736a9c=""
+                        src="<%=(Pictures[j].Reflectance)%>" alt="" class="picture"></div>
                     <div data-v-35736a9c="" class="type-wrap type-zh">
                       <%=(Pictures[j].Type)%>
                     </div>
