@@ -68,7 +68,7 @@ pkg .\pdfgenerator.js -t win -o pdfgenerator
 
 ## 功能模块设计
 
-![image-20231103093722614](C:/Users/CUIFAN/Desktop/崔帆/工作协同/漆面导出PDF/v1/dev/designDoc/动态导出HTML为PDF/images/workflow.png)
+![image-20231103093722614](./designDoc/images/workflow.png)
 
 ### 方案1：
 
