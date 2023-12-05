@@ -16637,9 +16637,9 @@ body[data-v-35736a9c] {
   font-weight: 550;
 }
 
-.defect-point[data-v-35736a9c] {
-  width: 0.15625rem;
-  height: 0.15625rem;
+.defect-point {
+  width: 3px!important;
+  height: 3px!important;
   border-radius: 50%;
   margin-right: 0.052083rem;
 }
