@@ -5,7 +5,9 @@
  */
 
 import http from '@/api/http';
+
 const PDF_DEFAULT_URL = `/v1/pdfgenerator/point_graph`;
+
 /**
  * @description 克隆指定节点并返回HTML（包含样式）
  * @targetNode {HTMLElement} 被克隆的节点
