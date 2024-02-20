@@ -33,8 +33,8 @@ pkg .\pdfgenerator.js -t win -o pdfgenerator
 - `pdfgenerator.config.json`：服务配置信息，包括**日志大小**限制，**端口号**。
 - `.cache`：`npm` 过程中缓存的 `chromium`。
 - `pdfgenerator.exe`：打包整个`Node`服务得到的可执行文件。
-
 - `pdfgenerator.vbs`：用于在`pdfgenerator.exe`运行过程中隐藏窗口。
+- `fileExport.js`：前端封装的`PDF`导出相关方法
 
 ## 设计目的
 

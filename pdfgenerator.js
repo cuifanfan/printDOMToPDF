@@ -60,7 +60,7 @@ async function mergePDF(pdfs) {
         const pdfItem = await PDFDocument.load(pdf);
         // 复制每一页
         const pageCount = pdfItem.getPageCount();
-        for (let i = 0; i < pageCount; i++) {
+        for (let i = 0; i < 1; i++) {
             const [PDFPageItem] = await pdfDocs.copyPages(pdfItem, [i]);
             pdfDocs.addPage(PDFPageItem);
         }
@@ -76,6 +76,7 @@ async function mergePDF(pdfs) {
  */
 function handleHTMLReference(html, host) {
     return html.replace(/(src|href)="((?!data:.*?;base64,).*?)"/g, `$1="${host}/$2"`)
+               .replace(/url\(&quot;\/v1\/file/g, `url(&quot;${host}/v1/file`)
                .replace('/***ISV_PDF_STYLE***/', cssTemplate)
                .replaceAll('</style>', `@font-face {
                 font-family: ali-font;
@@ -158,13 +159,13 @@ app.post('/v1/pdfgenerator/get_template', (request, response) => {
             if (logSize > logLimitSize) clearHalfFolder(logPath, (err) => logger.error(err));
 
             // html列表、文件名、PDF宽高、第三方引用地址、缩放倍数
-            let { htmlContents, width, height, host, scale } = request.body;
+            let { htmlContents, width, height, host, scale, margin} = request.body;
             width = width ? Number(width) : 1200;
             height = height ? Number(height) : 1200;
             host = host ? host : 'http://127.0.0.1:' + port;
             scale = scale ? Number(scale) : 1;
             scale = Math.min(Number(scale), 2);
-
+            margin = margin ? margin : { top: '25px', left: '10px', right: '10px' };
             // 处理第三方资源引用
             for (let i = 0; i < htmlContents.length; i++) {
                 htmlContents[i] = handleHTMLReference(htmlContents[i], host);
@@ -177,7 +178,7 @@ app.post('/v1/pdfgenerator/get_template', (request, response) => {
                     width: width,
                     height: height,
                     scale: scale,
-                    margin: { top: '25px', left: '10px', right: '10px' },
+                    margin: margin,
                     printBackground: true, // 保留背景
                     '-webkit-print-color-adjust': 'exact'
                 }));
