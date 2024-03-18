@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer');
 const bodyParser = require('body-parser');
 const log4js = require('log4js');
 const { PDFDocument } = require('pdf-lib');
-const expressArtTemplate = require('express-art-template');
+const artTemplate = require('art-template');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -60,7 +60,7 @@ async function mergePDF(pdfs) {
         const pdfItem = await PDFDocument.load(pdf);
         // 复制每一页
         const pageCount = pdfItem.getPageCount();
-        for (let i = 0; i < 1; i++) {
+        for (let i = 0; i < pageCount; i++) {
             const [PDFPageItem] = await pdfDocs.copyPages(pdfItem, [i]);
             pdfDocs.addPage(PDFPageItem);
         }
@@ -76,16 +76,21 @@ async function mergePDF(pdfs) {
  */
 function handleHTMLReference(html, host) {
     return html.replace(/(src|href)="((?!data:.*?;base64,).*?)"/g, `$1="${host}/$2"`)
-               .replace(/url\(&quot;\/v1\/file/g, `url(&quot;${host}/v1/file`)
-               .replace('/***ISV_PDF_STYLE***/', cssTemplate)
-               .replaceAll('</style>', `@font-face {
-                font-family: ali-font;
-                src: url("Alibaba-PuHuiTi-Regular.ttf");
-                font-weight: normal;
-                font-style: normal;
-              }</style>`);
+               .replace(/url\(&quot;\/v1\/file/g, `url(&quot;${host}/v1/file`);
 }
 
+/**
+ * @description 获取模板
+ * @param {String} htmlPath HTML模板地址
+ * @param {String} cssPath CSS模板地址
+ * @param {String} identifier CSS替换标识符
+ * @returns {String} 模板
+ */
+function renderTemplateHTML(htmlPath, cssPath, identifier='/***ISV_PDF_STYLE***/') {
+    const htmlTemplate = fs.readFileSync(path.join(viewsPath, htmlPath)).toString();
+    const cssTemplate = fs.readFileSync(path.join(viewsPath, cssPath)).toString();
+    return htmlTemplate.replace(identifier, cssTemplate);
+}
 
 // 日志性相关
 const logPath = './logs';
@@ -134,16 +139,22 @@ app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors());
 
 // 配置模板引擎
-app.engine('html', expressArtTemplate);
+app.engine('html', artTemplate);
 app.set('views', viewsPath);
 app.set('view engine', 'html');
-const cssTemplate = fs.readFileSync(path.join(viewsPath, './reportTemplate.css'));
 
+
+// 数据平台-漆面检测-数据分析-获取模板
+const specularDetectionReportHTML = renderTemplateHTML(
+    `./accuAnalyzer/specularDetection/digitalAnalysis/reportTemplate.html`,
+    `./accuAnalyzer/specularDetection/digitalAnalysis/reportTemplate.css`,
+);
 app.post('/v1/pdfgenerator/get_template', (request, response) => {
     try {
         const data = request.body;
         data.pageNum = 2 + Math.ceil((data.Pictures.length - 7) / 11); // PDF总页数
-        response.render('reportTemplate.html', data);
+        const htmlStr = artTemplate.render(specularDetectionReportHTML, data);
+        response.send(htmlStr);
     } catch (err) {
         logger.error(err);
     }
