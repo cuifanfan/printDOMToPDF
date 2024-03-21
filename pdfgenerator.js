@@ -7,7 +7,54 @@ const artTemplate = require('art-template');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+// 用户配置的信息
+const serverConfig = JSON.parse(fs.readFileSync('./pdfgenerator.config.json'));
+// 配置日志
+const logger = log4js.getLogger();
+log4js.configure({
+    replaceConsole: true,
+    appenders: {
+        cheese: {
+            // 设置类型为 dateFile
+            type: 'dateFile',
+            // 配置文件名为 myLog.log
+            filename: 'logs/pdfgenerator.log',
+            // 指定编码格式为 utf-8
+            encoding: 'utf-8',
+            // 配置 layout，此处使用自定义模式 pattern
+            layout: {
+                type: 'pattern',
+                // 配置模式
+                // pattern: '{"date":"%d","level":"%p","category":"%c","host":"%h","pid":"%z","data":\'%m\'}'
+                pattern: '%d %p %m'
+            },
+            // 日志文件按日期（天）切割
+            pattern: 'yyyy-MM-dd',
+            // 回滚旧的日志文件时，保证以 .log 结尾 （只有在 alwaysIncludePattern 为 false 生效）
+            keepFileExt: true,
+            // 输出的日志文件名是都始终包含 pattern 日期结尾
+            alwaysIncludePattern: true
+        },
+    },
+    categories: {
+        // 设置默认的 categories
+        default: { appenders: ['cheese'], level: 'debug' },
+    }
+});
 
+/**
+ * @description 检查日志是否已满
+ * @param {Object} 
+ * @returns {*} 
+ */
+function checkLogFull(logConfig, handler) {
+    const logPath = logConfig.path;
+    const logLimitSize = logConfig.size;
+    const logSize = getFolderSize(logPath, (err) => logger.error(err));
+    if (logSize > logLimitSize) {
+        handler && handler(logPath);
+    }
+}
 /**
  * @description 获取文件夹大小
  * @param {String} folderPath 文件夹路径
@@ -49,15 +96,15 @@ function clearHalfFolder(folderPath, errHandler) {
 
 /**
  * @description 合并多个pdf为一页
- * @param {Array} pdfs
+ * @param {Array} pdfArray
  * @returns {Buffer} pdf buffer数据
  */
-async function mergePDF(pdfs) {
+async function mergePDF(pdfArray) {
     // 创建新的 PDF 文档
     const pdfDocs = await PDFDocument.create();
-    for (const pdf of pdfs) {
+    for (const onePDFPage of pdfArray) {
         // 读取当前PDF
-        const pdfItem = await PDFDocument.load(pdf);
+        const pdfItem = await PDFDocument.load(onePDFPage);
         // 复制每一页
         const pageCount = pdfItem.getPageCount();
         for (let i = 0; i < pageCount; i++) {
@@ -87,123 +134,133 @@ function handleHTMLReference(html, host) {
  * @returns {String} 模板
  */
 function renderTemplateHTML(htmlPath, cssPath, identifier='/***ISV_PDF_STYLE***/') {
-    const htmlTemplate = fs.readFileSync(path.join(viewsPath, htmlPath)).toString();
-    const cssTemplate = fs.readFileSync(path.join(viewsPath, cssPath)).toString();
+    const htmlTemplate = fs.readFileSync(path.join(serverConfig.viewsPath, htmlPath)).toString();
+    const cssTemplate = fs.readFileSync(path.join(serverConfig.viewsPath, cssPath)).toString();
     return htmlTemplate.replace(identifier, cssTemplate);
 }
 
-// 日志性相关
-const logPath = './logs';
-const logger = log4js.getLogger();
-log4js.configure({
-    replaceConsole: true,
-    appenders: {
-        cheese: {
-            // 设置类型为 dateFile
-            type: 'dateFile',
-            // 配置文件名为 myLog.log
-            filename: 'logs/pdfgenerator.log',
-            // 指定编码格式为 utf-8
-            encoding: 'utf-8',
-            // 配置 layout，此处使用自定义模式 pattern
-            layout: {
-                type: 'pattern',
-                // 配置模式
-                // pattern: '{"date":"%d","level":"%p","category":"%c","host":"%h","pid":"%z","data":\'%m\'}'
-                pattern: '%d %p %m'
-            },
-            // 日志文件按日期（天）切割
-            pattern: 'yyyy-MM-dd',
-            // 回滚旧的日志文件时，保证以 .log 结尾 （只有在 alwaysIncludePattern 为 false 生效）
-            keepFileExt: true,
-            // 输出的日志文件名是都始终包含 pattern 日期结尾
-            alwaysIncludePattern: true
+/**
+ * @description 提取请求体中的pdf打印配置信息
+ * @param {Object} pdfConfig 请求体
+ * @returns {Object} 处理后的PDF配置信息
+ */
+function extractPDFConfig(pdfConfig) {
+    let { width, height, scale, margin, host} = pdfConfig;
+    width = width ? Number(width) : 1200;
+    height = height ? Number(height) : 1200;
+    scale = Math.min(scale ? Number(scale) : 1, 2);
+    margin = margin ? margin : { top: '25px', left: '10px', right: '10px' };
+    return {
+        printConfig: {
+            width: width,
+            height: height,
+            scale: scale,
+            margin: margin,
+            printBackground: true, // 保留背景
+            '-webkit-print-color-adjust': 'exact'
         },
-    },
-    categories: {
-        // 设置默认的 categories
-        default: { appenders: ['cheese'], level: 'debug' },
+        host: host
     }
-});
-// 读取自定义配置信息
-const config = JSON.parse(fs.readFileSync('./pdfgenerator.config.json'));
-const port = config.port;
-const logLimitSize = config.logs.size;
-const viewsPath = config.viewsPath;
+}
 
-const app = express();
-// 解析POST请求参数
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
-// 处理跨域
-app.use(cors());
+/**
+ * @description 创建服务
+ * @param {Function} 构造器
+ * @returns {Object} 服务对象
+ */
+function createServer(excutor) {
+    const app = excutor();
+    // 解析POST请求参数
+    app.use(bodyParser.json({ limit: '10mb' }));
+    app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+    // 处理跨域
+    app.use(cors());
+    // 配置模板引擎
+    app.engine('html', artTemplate);
+    app.set('views', serverConfig.viewsPath);
+    app.set('view engine', 'html');
+    return app;
+}
 
-// 配置模板引擎
-app.engine('html', artTemplate);
-app.set('views', viewsPath);
-app.set('view engine', 'html');
-
-
-// 数据平台-漆面检测-数据分析-获取模板
-const specularDetectionReportHTML = renderTemplateHTML(
-    `./accuAnalyzer/specularDetection/digitalAnalysis/reportTemplate.html`,
-    `./accuAnalyzer/specularDetection/digitalAnalysis/reportTemplate.css`,
-);
-app.post('/v1/pdfgenerator/get_template', (request, response) => {
+/**
+ * @description 数据平台-漆面检测-数据分析-获取模板服务
+ * @param {Object} app 服务对象
+ * @param {String} url 服务地址
+ */
+function getSpecularDetectionReportTemplate(app, url) {
+    /**
+     * @description 数据平台-漆面检测-数据分析-获取模板
+     */
+    app.post(url, (request, response) => {
     try {
         const data = request.body;
         data.pageNum = 2 + Math.ceil((data.Pictures.length - 7) / 11); // PDF总页数
+        const specularDetectionReportHTML = renderTemplateHTML(
+            `./accuAnalyzer/specularDetection/digitalAnalysis/reportTemplate.html`,
+            `./accuAnalyzer/specularDetection/digitalAnalysis/reportTemplate.css`,
+        );
         const htmlStr = artTemplate.render(specularDetectionReportHTML, data);
         response.send(htmlStr);
     } catch (err) {
         logger.error(err);
     }
-});
+    });
+}
 
-(async () => {
+/**
+ * @description 通用接口-转换HTML模板为PDF
+ * @param {Object} app 服务对象
+ * @param {String} url 服务地址
+ */
+async function convertHTMLToPDF(app, url) {
     const browser = await puppeteer.launch({ headless: 'new',});
     const page = await browser.newPage();
-    app.post('/v1/pdfgenerator/point_graph', async (request, response) => {
+    /**
+     * @description 转换HTML模板为PDF
+     * @param {Array} htmlContents HTML模板数组
+     * @param {Number} width PDF宽度
+     * @param {Number} height PDF高度
+     * @param {Number} scale PDF缩放系数
+     * @param {Array} margin PDF边距
+     * @param {Number} height PDF高度
+     * @param {String} host 模板中引用的资源文件第三方服务地址
+     * @returns {Buffer} 
+    */ 
+    app.post(url, async (request, response) => {
         try {
-            // 如果日志文件夹大小大于1M，删除文件夹下一半文件
-            const logSize = getFolderSize(logPath, (err) => logger.error(err));
-            if (logSize > logLimitSize) clearHalfFolder(logPath, (err) => logger.error(err));
+            // 日志满的话，删除一半
+            checkLogFull(serverConfig.logs, clearHalfFolder);
 
-            // html列表、文件名、PDF宽高、第三方引用地址、缩放倍数
-            let { htmlContents, width, height, host, scale, margin} = request.body;
-            width = width ? Number(width) : 1200;
-            height = height ? Number(height) : 1200;
-            host = host ? host : 'http://127.0.0.1:' + port;
-            scale = scale ? Number(scale) : 1;
-            scale = Math.min(Number(scale), 2);
-            margin = margin ? margin : { top: '25px', left: '10px', right: '10px' };
-            // 处理第三方资源引用
+            const htmlContents = request.body.htmlContents;
+            const pdfConfig = extractPDFConfig(request.body);
+            
+            // 处理模板第三方资源引用
             for (let i = 0; i < htmlContents.length; i++) {
-                htmlContents[i] = handleHTMLReference(htmlContents[i], host);
+                htmlContents[i] = handleHTMLReference(htmlContents[i], pdfConfig.host);
             }
 
-            const pdfs = [];
+            // 为每个模板生成一张PDF
+            const pdfArray = [];
             for (const htmlContent of htmlContents) {
                 await page.setContent(htmlContent);
-                pdfs.push(await page.pdf({
-                    width: width,
-                    height: height,
-                    scale: scale,
-                    margin: margin,
-                    printBackground: true, // 保留背景
-                    '-webkit-print-color-adjust': 'exact'
-                }));
+                const onePagePDF = await page.pdf(pdfConfig.printConfig);
+                pdfArray.push(onePagePDF);
             }
-            // 合并所有页面的PDF，得到Buffer
-            const pdfBuffer = Buffer.from(await mergePDF(pdfs));
+
+            // 合并所有页面的PDF
+            const mergedPDF = await mergePDF(pdfArray);
             response.setHeader('Content-type', 'application/pdf');
-            response.send(pdfBuffer);
+            response.send(Buffer.from(mergedPDF));
         } catch (err) {
             logger.error(err);
             await browser.close();
         }
     });
-})()
-app.listen(port, () => {
-    console.log(`welcome, server is running at ${port}...`);
+}
+
+const app = createServer(express);
+convertHTMLToPDF(app, '/v1/pdfgenerator/point_graph');
+getSpecularDetectionReportTemplate(app, '/v1/pdfgenerator/get_template');
+app.listen(serverConfig.port, () => {
+    console.log(`welcome, server is running at ${serverConfig.port}...`);
 });
