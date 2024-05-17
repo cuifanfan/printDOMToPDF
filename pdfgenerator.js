@@ -179,6 +179,9 @@ function createServer(excutor) {
     app.engine('html', artTemplate);
     app.set('views', serverConfig.viewsPath);
     app.set('view engine', 'html');
+    app.listen(serverConfig.port, () => {
+        console.log(`welcome, server is running at ${serverConfig.port}...`);
+    });
     return app;
 }
 
@@ -261,6 +264,3 @@ async function convertHTMLToPDF(app, url) {
 const app = createServer(express);
 convertHTMLToPDF(app, '/v1/pdfgenerator/point_graph');
 getSpecularDetectionReportTemplate(app, '/v1/pdfgenerator/get_template');
-app.listen(serverConfig.port, () => {
-    console.log(`welcome, server is running at ${serverConfig.port}...`);
-});
