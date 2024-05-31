@@ -171,14 +171,17 @@ function extractPDFConfig(pdfConfig) {
 function createServer(excutor) {
     const app = excutor();
     // 解析POST请求参数
-    app.use(bodyParser.json({ limit: '10mb' }));
-    app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+    app.use(bodyParser.json({ limit: '2048mb' }));
+    app.use(bodyParser.urlencoded({ limit: '2048mb', extended: true }));
     // 处理跨域
     app.use(cors());
     // 配置模板引擎
     app.engine('html', artTemplate);
     app.set('views', serverConfig.viewsPath);
     app.set('view engine', 'html');
+    app.listen(serverConfig.port, () => {
+        console.log(`welcome, server is running at ${serverConfig.port}...`);
+    });
     return app;
 }
 
@@ -261,6 +264,3 @@ async function convertHTMLToPDF(app, url) {
 const app = createServer(express);
 convertHTMLToPDF(app, '/v1/pdfgenerator/point_graph');
 getSpecularDetectionReportTemplate(app, '/v1/pdfgenerator/get_template');
-app.listen(serverConfig.port, () => {
-    console.log(`welcome, server is running at ${serverConfig.port}...`);
-});
